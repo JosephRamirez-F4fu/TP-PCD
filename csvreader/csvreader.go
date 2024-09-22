@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func ReadCSV(filePath string) ([]string, [][]string, error) {
+func ReadCSV(filePath string, Comma rune) ([]string, [][]string, error) {
 	// Abrir el archivo CSV
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -17,6 +17,7 @@ func ReadCSV(filePath string) ([]string, [][]string, error) {
 
 	// Crear un lector CSV
 	reader := csv.NewReader(file)
+	reader.Comma = Comma
 
 	// Leer todas las filas del archivo CSV
 	rows, err := reader.ReadAll()
