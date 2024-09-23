@@ -6,8 +6,13 @@ import (
 	"math"
 	"os"
 	"strconv"
+	"time"
 	"tp/concurrent/ccrandomforest"
 	"tp/csvreader"
+	"tp/sequential/sqrandomforest"
+	"tp/test"
+
+	"math/rand"
 )
 
 func readCsvAsMatrix(path string, Comma rune) [][]float64 {
@@ -155,87 +160,113 @@ func app() {
 
 }
 
+type Params struct {
+	numTrees       int
+	maxDepth       int
+	maxFeatures    int
+	treeThreads    int
+	featureThreads int
+	randomState    int
+}
+
+func simulation(xTrain [][]float64, yTrain []float64, xTest [][]float64, yTest []float64) {
+	var trainStart, testStart time.Time
+	var trainDuration, testDuration time.Duration
+	var predY []float64
+	fmt.Println(":::::::::::::::::::::::::::::::::::::::::")
+	fmt.Println("::::::: RANDOM FOREST CLASSIFIER ::::::::")
+	fmt.Println(":::::::::::::::::::::::::::::::::::::::::")
+	// Random Forest parameters
+	// seqRfModel := sqrf.RandomForest{NumTrees: 200, MaxDepth: 20, MaxFeatures: int(math.Sqrt(float64(len(X[0]))))}
+	numTrees := 100*rand.Intn(10) + 1
+	maxDepth := 10*rand.Intn(5) + 1
+	maxFeatures := int(math.Sqrt(float64(len(xTrain[0]))))
+	// Random Forest threads
+	treeThreads := 10*rand.Intn(10) + 1
+	featureThreads := 10*rand.Intn(10) + 1
+	randomState := 100*rand.Intn(5) + 1
+
+	fmt.Println("NumTrees:       ", numTrees)
+	fmt.Println("MaxDepth:       ", maxDepth)
+	fmt.Println("MaxFeatures:    ", maxFeatures)
+	fmt.Println("TreeThreads:    ", treeThreads)
+	fmt.Println("FeatureThreads: ", featureThreads)
+	fmt.Println("RandomState:	", randomState)
+
+	fmt.Println("-----------------------------------------")
+	fmt.Println("\tConcurrent")
+	fmt.Println("-----------------------------------------")
+
+	ccRfModel := ccrandomforest.NewRandomForestClassifier(numTrees, maxDepth, maxFeatures, randomState)
+	trainStart = time.Now()
+	ccRfModel.Train(xTrain, yTrain, treeThreads, featureThreads)
+	trainDuration = time.Since(trainStart)
+
+	testStart = time.Now()
+	predY = ccRfModel.Predict(xTest)
+	testDuration = time.Since(testStart)
+
+	test.ConfusionMatrix(yTest, predY)
+	fmt.Println("-Results-")
+	fmt.Println("\tpresicion : ", test.CalcPrecision(yTest, predY))
+	fmt.Println("\trecall    : ", test.CalcRecall(yTest, predY))
+	fmt.Println("\tf1-score  : ", test.CalcF1Score(yTest, predY))
+	fmt.Printf("Training duration: %v\n", trainDuration)
+	fmt.Printf("Predict duration : %v\n", testDuration)
+	fmt.Println("-----------------------------------------")
+	fmt.Println("\tSequential")
+	fmt.Println("-----------------------------------------")
+
+	seqRfModel := sqrandomforest.NewRandomForestClassifier(numTrees, maxDepth, maxFeatures, 100)
+
+	trainStart = time.Now()
+	seqRfModel.Train(xTrain, yTrain)
+	trainDuration = time.Since(trainStart)
+
+	testStart = time.Now()
+	predY = seqRfModel.Predict(xTest)
+	testDuration = time.Since(testStart)
+
+	test.ConfusionMatrix(yTest, predY)
+	fmt.Println("-Results-")
+	fmt.Println("\tpresicion : ", test.CalcPrecision(yTest, predY))
+	fmt.Println("\trecall    : ", test.CalcRecall(yTest, predY))
+	fmt.Println("\tf1-score  : ", test.CalcF1Score(yTest, predY))
+	fmt.Printf("Training duration: %v\n", trainDuration)
+	fmt.Printf("Predict duration : %v\n", testDuration)
+
+}
+
 func main() {
-	/*
-		var trainStart, testStart time.Time
-		var trainDuration, testDuration time.Duration
-		var predY []float64
 
-		xTrain := readCsvAsMatrix("data/X_train.csv")
-		yTrain := matrixToSlice(readCsvAsMatrix("data/y_train.csv"))
-		xTest := readCsvAsMatrix("data/X_test.csv")
-		yTest := matrixToSlice(readCsvAsMatrix("data/y_test.csv"))
+	xTrain := readCsvAsMatrix("data/X_train.csv", ';')
+	yTrain := matrixToSlice(readCsvAsMatrix("data/y_train.csv", ';'))
+	xTest := readCsvAsMatrix("data/X_test.csv", ';')
+	yTest := matrixToSlice(readCsvAsMatrix("data/y_test.csv", ';'))
 
-		if xTrain == nil || yTrain == nil || xTest == nil || yTest == nil {
-			return
+	if xTrain == nil || yTrain == nil || xTest == nil || yTest == nil {
+		return
+	}
+	println("X train -> rows  =", len(xTrain), "\tcols =", len(xTrain[0]))
+	println("y train -> nrows =", len(yTrain))
+	println("X test  -> rows  =", len(xTest), "\tcols =", len(xTest[0]))
+	println("y test  -> nrows =", len(yTest))
+	var n string
+	var nsimulations int
+	var err error
+	for {
+		n = readInput("Ingrese el número de simulaciones: en caso contrario ingrese 0: ")
+		nsimulations, err = strconv.Atoi(n)
+		if err != nil && nsimulations < 0 {
+			fmt.Println("Error en el número de simulaciones")
+		} else {
+			break
 		}
-		println("X train -> rows  =", len(xTrain), "\tcols =", len(xTrain[0]))
-		println("y train -> nrows =", len(yTrain))
-		println("X test  -> rows  =", len(xTest), "\tcols =", len(xTest[0]))
-		println("y test  -> nrows =", len(yTest))
-		fmt.Println(":::::::::::::::::::::::::::::::::::::::::")
-		fmt.Println("::::::: RANDOM FOREST CLASSIFIER ::::::::")
-		fmt.Println(":::::::::::::::::::::::::::::::::::::::::")
-		// Random Forest parameters
-		// seqRfModel := sqrf.RandomForest{NumTrees: 200, MaxDepth: 20, MaxFeatures: int(math.Sqrt(float64(len(X[0]))))}
-		numTrees := 200
-		maxDepth := 30
-		maxFeatures := int(math.Sqrt(float64(len(xTrain[0]))))
-		// Random Forest threads
-		treeThreads := 10
-		featureThreads := 10
+	}
+	fmt.Println("Simulaciones: ", nsimulations)
+	for i := 0; i < nsimulations; i++ {
 
-		fmt.Println("NumTrees:       ", numTrees)
-		fmt.Println("MaxDepth:       ", maxDepth)
-		fmt.Println("MaxFeatures:    ", maxFeatures)
-		fmt.Println("TreeThreads:    ", treeThreads)
-		fmt.Println("FeatureThreads: ", featureThreads)
-
-		fmt.Println("-----------------------------------------")
-		fmt.Println("\tConcurrent")
-		fmt.Println("-----------------------------------------")
-		/*ccRfModel := ccrandomforest.RandomForest{
-			NumTrees:    numTrees,
-			MaxDepth:    maxDepth,
-			MaxFeatures: maxFeatures,
-		}*/
-	/*	ccRfModel := ccrandomforest.NewRandomForestClassifier(numTrees, maxDepth, maxFeatures, 100)
-		trainStart = time.Now()
-		ccRfModel.Train(xTrain, yTrain, treeThreads, featureThreads)
-		trainDuration = time.Since(trainStart)
-
-		testStart = time.Now()
-		predY = ccRfModel.Predict(xTest)
-		testDuration = time.Since(testStart)
-
-		test.ConfusionMatrix(yTest, predY)
-		fmt.Println("-Results-")
-		fmt.Println("\tpresicion : ", test.CalcPrecision(yTest, predY))
-		fmt.Println("\trecall    : ", test.CalcRecall(yTest, predY))
-		fmt.Println("\tf1-score  : ", test.CalcF1Score(yTest, predY))
-		fmt.Printf("Training duration: %v\n", trainDuration)
-		fmt.Printf("Predict duration : %v\n", testDuration)
-		fmt.Println("-----------------------------------------")
-		fmt.Println("\tSequential")
-		fmt.Println("-----------------------------------------")
-
-		seqRfModel := sqrandomforest.NewRandomForestClassifier(numTrees, maxDepth, maxFeatures, 100)
-
-		trainStart = time.Now()
-		seqRfModel.Train(xTrain, yTrain)
-		trainDuration = time.Since(trainStart)
-
-		testStart = time.Now()
-		predY = seqRfModel.Predict(xTest)
-		testDuration = time.Since(testStart)
-
-		test.ConfusionMatrix(yTest, predY)
-		fmt.Println("-Results-")
-		fmt.Println("\tpresicion : ", test.CalcPrecision(yTest, predY))
-		fmt.Println("\trecall    : ", test.CalcRecall(yTest, predY))
-		fmt.Println("\tf1-score  : ", test.CalcF1Score(yTest, predY))
-		fmt.Printf("Training duration: %v\n", trainDuration)
-		fmt.Printf("Predict duration : %v\n", testDuration)
-	*/
+		simulation(xTrain, yTrain, xTest, yTest)
+	}
 	app()
 }
