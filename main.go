@@ -43,8 +43,8 @@ func getModel(numTrees, maxDepth int) ccrandomforest.RandomForest {
 	*/
 	xTrain := readCsvAsMatrix("data/X_train.csv", ';')
 	yTrain := matrixToSlice(readCsvAsMatrix("data/y_train.csv", ';'))
-	treeThreads := 10
-	featureThreads := 10
+	treeThreads := 25
+	featureThreads := 25
 	maxFeatures := int(math.Sqrt(float64(len(xTrain[0]))))
 	rfc := ccrandomforest.NewRandomForestClassifier(numTrees, maxDepth, maxFeatures, 100)
 	rfc.Train(xTrain, yTrain, treeThreads, featureThreads)
