@@ -119,6 +119,21 @@ func app() {
 	banner("Consulta de Prioridad de Cliente")
 	fmt.Println("Ingrese los datos del cliente para determinar su prioridad")
 	for flag {
+		banner("Consumos de Energía")
+
+		fmt.Println("Ingrese los consumos de energía del cliente")
+		consumostr := readInput("Ingrese Consumo: ")
+		var consumo float64
+		var err error
+		for {
+			consumo, err = strconv.ParseFloat(consumostr, 64)
+			if err == nil {
+				break
+			}
+			fmt.Println("Valor no válido")
+			consumostr = readInput("Ingrese Consumo: ")
+		}
+
 		banner("Tarifa")
 		tarifa := read_valid_input(encoderTarifa, "Ingrese Tarifa: ")
 		banner("Departamento")
@@ -134,6 +149,7 @@ func app() {
 		cartera := read_valid_input(encoderCartera, "Ingrese Cartera: ")
 
 		fmt.Println("\nDatos ingresados:")
+		fmt.Println("Consumo:", consumo)
 		fmt.Println("Tarifa:", tarifa)
 		fmt.Println("Departamento:", departamento)
 		fmt.Println("Provincia:", provincia)
@@ -141,7 +157,12 @@ func app() {
 		fmt.Println("Cartera:", cartera)
 
 		transform := []float64{
-			encoderTarifa[tarifa], encoderDepartamento[departamento], encoderProvincia[provincia], encoderDistrito[distrito], encoderCartera[cartera]}
+			consumo,
+			encoderTarifa[tarifa],
+			encoderDepartamento[departamento],
+			encoderProvincia[provincia],
+			encoderDistrito[distrito],
+			encoderCartera[cartera]}
 		matrix := make([][]float64, 1)
 		matrix[0] = transform
 		if rfc.Predict(matrix)[0] == 0 {
@@ -158,15 +179,6 @@ func app() {
 		}
 	}
 
-}
-
-type Params struct {
-	numTrees       int
-	maxDepth       int
-	maxFeatures    int
-	treeThreads    int
-	featureThreads int
-	randomState    int
 }
 
 func simulation(xTrain [][]float64, yTrain []float64, xTest [][]float64, yTest []float64) {
