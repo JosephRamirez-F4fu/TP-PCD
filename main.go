@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
 	"strconv"
 	"time"
@@ -11,8 +12,6 @@ import (
 	"tp/csvreader"
 	"tp/sequential/sqrandomforest"
 	"tp/test"
-
-	"math/rand"
 )
 
 func readCsvAsMatrix(path string, Comma rune) [][]float64 {
@@ -190,13 +189,13 @@ func simulation(xTrain [][]float64, yTrain []float64, xTest [][]float64, yTest [
 	fmt.Println(":::::::::::::::::::::::::::::::::::::::::")
 	// Random Forest parameters
 	// seqRfModel := sqrf.RandomForest{NumTrees: 200, MaxDepth: 20, MaxFeatures: int(math.Sqrt(float64(len(X[0]))))}
-	numTrees := 100*rand.Intn(10) + 1
-	maxDepth := 10*rand.Intn(5) + 1
+	numTrees := 100
+	maxDepth := 10
 	maxFeatures := int(math.Sqrt(float64(len(xTrain[0]))))
 	// Random Forest threads
-	treeThreads := 10*rand.Intn(10) + 1
-	featureThreads := 10*rand.Intn(10) + 1
-	randomState := 100*rand.Intn(5) + 1
+	treeThreads := 25
+	featureThreads := 25
+	randomState := 20*rand.Intn(50) + 50
 
 	fmt.Println("NumTrees:       ", numTrees)
 	fmt.Println("MaxDepth:       ", maxDepth)
